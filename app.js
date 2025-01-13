@@ -63,7 +63,7 @@ router.post('/register', async (ctx) =>{
       return;
     }
     password = await hashPassword(password);
-  const newUser = User.create({username, password, email});
+    await User.create({username, password, email});
   ctx.status = 201;
   await syncDatabase();
   ctx.body = {message: "User created successfully"}
@@ -120,7 +120,7 @@ router.put('/updatepassword', async (ctx) => {
    {
     ctx.body = {message:"Old password is Incorrect"}
    }
-   newpassword = await hashPassword(newpassword);
+   newpassword = hashPassword(newpassword);
    await User.update({password: newpassword},{where: {username: username}});
    await syncDatabase();
    ctx.body = {message: 'Password updated successfully'}
@@ -138,6 +138,7 @@ router.put('/updateemail', async (ctx) =>{
   const checkmail = await checkEmail(newemail);
   if(checkmail){
     console.log(checkmail);
+    ctx.status = 201;
     ctx.body = {message: "email already exists"};
     return;
   }
@@ -213,3 +214,5 @@ app.use(auth); // Use JWT middleware
 //main app 
 app.use(router.routes()).use(router.allowedMethods());
 app.listen(3000);
+
+
