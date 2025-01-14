@@ -1,4 +1,11 @@
 {
+  "name": "koa-app",
+  "version": "1.0.0",
+  "main": "app.js",
+  "type": "module",  
+  "scripts": {
+    "start": "nodemon app.js"
+  },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.7",
