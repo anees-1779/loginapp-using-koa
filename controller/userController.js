@@ -2,6 +2,7 @@ import { JWT_SECRECT } from '../config/database.js';
 import {User} from '../models/userModel.js';
 import bcrypt from 'bcryptjs';
 import jwt  from 'jsonwebtoken';
+
 // Update the password
 const updatePassword = async (ctx) => {
   try {

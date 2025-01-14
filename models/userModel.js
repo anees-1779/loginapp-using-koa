@@ -1,5 +1,6 @@
 import {sequelize} from '../config/database.js';
 import { DataTypes } from 'sequelize';
+
 //make a data model without using SQL Query
 const User = sequelize.define('User',{
   id:{

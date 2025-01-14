@@ -1,6 +1,7 @@
 import Router from 'koa-router';
-const authRouter = new Router();
 import {registerUser, login} from '../controller/authController.js';
+
+const authRouter = new Router();
 authRouter.post('/register', registerUser);
 authRouter.post('/login', login);
 
