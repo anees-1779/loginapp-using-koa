@@ -1,31 +1,36 @@
-import {sequelize} from '../config/database.js';
+import { sequelize } from '../config/database.js';
 import { DataTypes } from 'sequelize';
 
-//make a data model without using SQL Query
-const User = sequelize.define('User',{
-  id:{
+// Define the User model
+const User = sequelize.define('users', {  // Model name 'User'
+  id: {
     type: DataTypes.INTEGER,
     allowNull: false,
     autoIncrement: true,
-    primaryKey:true
+    primaryKey: true,
   },
-  username:{
+  username: {
     type: DataTypes.STRING(50),
     allowNull: false,
-    unique: true
+    unique: true,
   },
-  password:{
-    type: DataTypes.STRING,
+  password: {
+    type: DataTypes.STRING(255),
     allowNull: false,
   },
-  email:{
-    type: DataTypes.STRING,
+  email: {
+    type: DataTypes.STRING(255),
     allowNull: false,
-    unique: true
-  }
-
-},{
-  timestamps: true
+    unique: true,
+  },
+}, {
+  tableName: 'users',  // Explicit table name
+  timestamps: true,
 });
 
-export {User};
+// Sync the model with the database
+sequelize.sync({ force: false })  // `force: false` ensures it doesn't overwrite existing tables
+  .then(() => console.log('User table synced successfully'))
+  .catch((err) => console.error('Error syncing user table:', err));
+
+export { User };

@@ -1,11 +1,15 @@
-import Sequelize from 'sequelize';  // to interact with the database using objects
-import dotenv from 'dotenv';  // ES module import for dotenv
+import Sequelize from 'sequelize';
+import dotenv from 'dotenv';
 
-dotenv.config();  // Load environment variables from .env file
+// Load environment variables from .env file
+dotenv.config();
 
-const JWT_SECRECT = process.env.JWT_SECRECT; 
-console.log(JWT_SECRECT)
 // Correcting the typo in 'JWT_SECRET'
+const JWT_SECRECT = process.env.JWT_SECRECT;
+
+console.log('DB Name:', process.env.DB_name); // Check if DB name is correctly loaded
+
+// Establish a connection to the database
 const sequelize = new Sequelize(
   process.env.DB_name,
   process.env.DB_username,
@@ -18,4 +22,13 @@ const sequelize = new Sequelize(
   }
 );
 
-export { sequelize, JWT_SECRECT };  // ES module export
+// Test the database connection
+sequelize.authenticate()
+  .then(() => {
+    console.log('Database connection established successfully.');
+  })
+  .catch(err => {
+    console.error('Unable to connect to the database:', err);
+  });
+
+export { sequelize, JWT_SECRECT };

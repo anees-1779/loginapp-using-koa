@@ -75,10 +75,11 @@ const registerUser = async (ctx) => {
 
 // Login user
 const login = async (ctx) => {
-  const { username, password } = ctx.request.body;
-
+  const { username, password, email } = ctx.request.body;
+  console.log(username,password)
+  console.log(typeof(password))
   // Validate request body
-  const validation = await validInfo({ username, password });
+  const validation = await validInfo({ username, password ,email});
   if (!validation.valid) {
     ctx.status = 400;
     ctx.body = { errors: validation.errors };
@@ -104,5 +105,4 @@ const login = async (ctx) => {
   }
 };
 
-// Export functions
 export { login, registerUser, hashPassword };

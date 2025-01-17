@@ -1,22 +1,32 @@
 import { User } from "../models/userModel.js";
+import { middleware } from "koa-pagination";
 
-//TO GET ALL THE USERS INFO FROM THE DB
-const getUsersInfo = async (ctx) =>{
-  try{
-         const user = await User.findAll();
-        ctx.status = 200;
-        ctx.body = {user};
-    }
-    catch(error){
-      ctx.status = 400;
-      ctx.body = {
-        message: "No table found"
-      }
-    }
+// TO GET ALL THE USERS INFO FROM THE DB
+const getUsersInfo = async (ctx) => {
+  try {
+    const limit = ctx.query.limit ? parseInt(ctx.query.limit) : 10; 
+    const offset = ctx.query.offset ? parseInt(ctx.query.offset) : 0;  
+    const users = await User.findAll({ limit, offset });
+    ctx.pagination.length = User.count();
+    let count = await ctx.pagination.length ;
+    console.log(count)
+
+    ctx.body = {
+      message: "Users fetched successfully",
+      users,
+      "total": count
+    };
+  } catch (error) {
+    ctx.status = 400;
+    ctx.body = {
+      message: "Error fetching users",
+      error: error.message,
+    };
+  }
 };
 
-//TO DELETE A USER
 
+//TO DELETE A USER
 const deleteUser = async (ctx) =>{
   const id = ctx.params.id;
   try{
@@ -39,6 +49,7 @@ const deleteUser = async (ctx) =>{
 
 //TO UPDATE A USER EMAIL OR USERNAME
 const updateUser = async (ctx) =>{
+  try{
   const id = ctx.params.id;
   let {newUsername, newEmail} = ctx.request.body;
   const user = await User.findOne({where :{ id: id }});
@@ -58,12 +69,18 @@ const updateUser = async (ctx) =>{
     }
     return
   }
-  console.log(CNE,CNU);
+  console.log(CNE, CNU);
   await User.update({email: newEmail, username: newUsername},{where :{id: id}});
   ctx.body = {
     message:'User Updated'
   }
-};
+}catch(error){
+  ctx.status = 500;
+  ctx.body = {
+    message:"Operation failed",
+    error:err.message,
+  }
+}};
 
 //TO CHECK IF THE EMAIL OR USERNAME EXIST OR NOT
  async function checkNewUsername(newUsername,user){
@@ -88,6 +105,5 @@ async function checkNewEmail(newEmail, user){
   return false;
 }
 
-
-export {getUsersInfo, deleteUser, updateUser};
+export { getUsersInfo, deleteUser, updateUser };
 
