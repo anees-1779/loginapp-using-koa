@@ -1,8 +1,7 @@
 import { User } from '../models/userModel.js';
-import jwt from 'jsonwebtoken';
-import { JWT_SECRECT } from '../config/database.js';
-import bcrypt from 'bcryptjs';
 import * as yup from 'yup';
+import { generateToken } from '../lib/jwtVerification.js';
+import { checkPassword, hashedPassword } from '../lib/hashpassword.js';
 
 // Define validation schema
 const schema = yup.object().shape({
@@ -30,17 +29,6 @@ const checkUser = async (username) => await User.findOne({ where: { username } }
 // Check if the email already exists
 const checkEmail = async (email) => await User.findOne({ where: { email } });
 
-// Hash the password
-const hashPassword = async (password) => {
-  const salt = await bcrypt.genSalt(10);
-  return await bcrypt.hash(password, salt);
-};
-
-// Compare entered password with stored password
-const checkPassword = async (enteredPassword, user) => {
-  return await bcrypt.compare(enteredPassword, user.password);
-};
-
 // Register user
 const registerUser = async (ctx) => {
   const { username, password, email } = ctx.request.body;
@@ -62,8 +50,8 @@ const registerUser = async (ctx) => {
     }
 
     // Hash password and create the user
-    const hashedPassword = await hashPassword(password);
-    await User.create({ username, password: hashedPassword, email });
+    const Password = await hashedPassword(password);
+    await User.create({ username, password: Password, email });
 
     ctx.status = 201;
     ctx.body = { message: "User created successfully" };
@@ -90,10 +78,11 @@ const login = async (ctx) => {
     const user = await checkUser(username);
     if (user && await checkPassword(password, user)) {
       const payload = { username: user.username, email: user.email };
-      const token = jwt.sign(payload, JWT_SECRECT, { expiresIn: '1h' });
+      const token = await generateToken(payload);
+      console.log(token)
 
       ctx.status = 200;
-      ctx.body = { message: "Login successful", token };
+      ctx.body = { message: "Login successful", token:token };
       return;
     }
 
@@ -105,4 +94,5 @@ const login = async (ctx) => {
   }
 };
 
-export { login, registerUser, hashPassword };
+// Export functions
+export { login, registerUser };

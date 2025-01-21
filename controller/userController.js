@@ -1,17 +1,15 @@
-import { JWT_SECRECT } from '../config/database.js';
 import {User} from '../models/userModel.js';
-import bcrypt from 'bcryptjs';
-import jwt  from 'jsonwebtoken';
-import * as nodemailer from 'nodemailer';
-import * as otpGenerator from 'otp-generator'
-import { hashPassword } from './authController.js';
-
-// Update the password
+import { hashedPassword, checkPassword } from '../lib/hashpassword.js';
+import {sendMail} from '../lib/otpmail.js'
+import { otp } from '../lib/otp.js';
+import { tokenVerify } from '../lib/jwtVerification.js';
+import multer from 'koa-multer';
+import path from 'path';
+// Update the password 
 const updatePassword = async (ctx) => {
   try {
-    const token = ctx.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRECT);
-    const username = decoded.username;
+    const username = await tokenVerify(ctx);
+    console.log(username);
     const {newpassword,password} = ctx.request.body;
     const user = await User.findOne({ where: { username } });
     if (!user) {
@@ -19,22 +17,20 @@ const updatePassword = async (ctx) => {
       ctx.body = { message: "User does not exist" };
       return;
     }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid =await checkPassword(password, user.password);
     if (!isPasswordValid) {
       ctx.status = 400;
       ctx.body = { message: "Old password is incorrect" };
       return;
     }
-
-    const hashedPassword = await bcrypt.hash(newpassword, 10);
-    await User.update({ password: hashedPassword }, { where: { username } });
+    const Password =await hashedPassword(newpassword);
+    await User.update({ password: Password }, { where: { username } });
     ctx.status = 200;
     ctx.body = { message: "Password updated successfully" };
   } catch (err) {
     ctx.status = 500;
     ctx.body = { message: "Internal server error", error: err.message };
-  }
+  };
 };
 
 // Update email
@@ -64,7 +60,7 @@ const updateEmail = async (ctx) => {
   } catch (err) {
     ctx.status = 500;
     ctx.body = { message: "Internal server error", error: err.message };
-  }
+  };
 };
 
 // Update username
@@ -94,7 +90,7 @@ const updateUsername = async (ctx) => {
   } catch (err) {
     ctx.status = 500;
     ctx.body = { message: "Internal server error", error: err.message };
-  }
+  };
 };
 
 // Delete user
@@ -118,14 +114,14 @@ const deleteUser = async (ctx) => {
   } catch (err) {
     ctx.status = 500;
     ctx.body = { message: "Internal server error", error: err.message };
-  }
+  };
 };
 
 //TO RESET PASSWORD
-const resetPassword = async (ctx) =>{
+const OTPresetPassword = async (ctx) =>{
+  const { username , email } = ctx.request.body;
+  const user = await User.findOne({where: {username: username}});
   try{
-    const { username , email } = ctx.request.body;
-    const user = await User.findOne({where: {username: username}});
     if(!user){
       ctx.status = 404;
       ctx.body = {
@@ -140,48 +136,122 @@ const resetPassword = async (ctx) =>{
       }
       return;
     }
-     const newResetedPass = otpGenerator.generate(6, {
-        upperCaseAlphabets: true,
-        specialChars: true,
-        digits: true,
-        lowerCaseAlphabets:true });
-
-    const transporter = nodemailer.createTransport({
-      host: "sandbox.smtp.mailtrap.io",
-      port: 2525,
-      auth: {
-        user: "e2ac1ad1123eb9",
-        pass: "3c2a4d058f9943"
-      }
-     });
-    const info = await transporter.sendMail({
-      from: '"Login App" <no-reply@loginapp.com>',
-      to: email,
-      subject:"Your New password , use it to Update your password" ,
-      text: newResetedPass
-    });
-    const hashedPassword = await hashPassword(newResetedPass);
-    console.log(hashedPassword);
-    await User.update({password: hashedPassword}, {where: { username: username}});
+    const newResetedPass = otp();
+    console.log(newResetedPass);
+    sendMail(email, newResetedPass);
+    await User.update({otp: newResetedPass}, {where: {username:username}})
     ctx.status = 200;
     ctx.body = {
-      message:`Password reset successful, New password sent to user's E-mail,id: ${info.messageId}`
-    };
+      message: "OTP sent to email successfully"
+    }
+ 
   }
   catch(error){
     ctx.status = 500;
     ctx.body = {
       message: "Password changing operations failed",
-      error: error
+      error: error.message
     }
   };
-    
 };
+
+const resetPassword = async (ctx) => {
+  try{
+    const { username , email, otp , newpassword } = ctx.request.body;
+    const user = await User.findOne({where: {username: username}});
+    if(!user){
+      ctx.status = 404;
+      ctx.body = {
+        message: "User doesnot exist"
+      };
+      return;
+    }
+    else if(user.email != email){
+      ctx.status = 400;
+      ctx.body = {
+        message: "Your username doesnot match the email address with the account"
+      }
+      return;
+    }
+    console.log(user.otp);
+    if(otp == user.otp && user.otp != null){
+      const hashedPassword = await hashPassword(newpassword);
+      console.log(hashedPassword);
+      await User.update({password: hashedPassword}, {where: { username: username}});
+      await User.update({otp: null}, {where: {username: username}})
+      ctx.status = 200;
+      ctx.body = {
+        message:`Password reset successful`
+      };
+      return;
+    }
+    ctx.status = 404;
+    ctx.body = {
+      message: "Your OTP is incorrect please try again"
+    }
+  }
+  catch(error){
+    ctx.status = 500;
+    ctx.body = {
+      message: error
+    }
+  };
+};
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); 
+  },
+  filename: function (req, file, cb) {
+    //save the original file extension
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}${ext}`);
+  },
+});
+
+const upload = multer({ storage });
+
+const uploadPicture = async (ctx) => {
+  try {
+    const file = ctx.req.file;
+
+    if (!file) {
+      ctx.status = 404;
+      ctx.body = {
+        message: 'No file uploaded',
+      };
+      return;
+    }
+    console.log(file);
+
+    ctx.status = 202;
+    ctx.body = {
+      message: 'File uploaded successfully',
+      fileInfo: {
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        path: file.path,
+        size: file.size,
+      },
+    };
+  } catch (error) {
+    ctx.status = 500;
+    ctx.body = {
+      message: 'Upload operation failed',
+      error: error.message,
+    };
+  }
+};
+
+
 
 export {
   updatePassword,
   updateEmail,
   updateUsername,
   deleteUser,
-  resetPassword
+  resetPassword, 
+  OTPresetPassword,
+  uploadPicture,
+  upload
 };

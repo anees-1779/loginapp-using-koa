@@ -3,8 +3,10 @@ import bodyParser from 'koa-bodyparser';
 import {userRouter} from './routes/userRoutes.js';
 import {authRouter} from'./routes/authRoutes.js';
 import {adminRouter } from './routes/adminRoutes.js';
-
+import dotenv from 'dotenv';
+dotenv.config();
 const app = new Koa();
+
 app.use(bodyParser());
 
 // Use user routes

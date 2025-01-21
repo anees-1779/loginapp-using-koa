@@ -23,6 +23,11 @@ const User = sequelize.define('users', {  // Model name 'User'
     allowNull: false,
     unique: true,
   },
+  otp:{
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    unique: false
+  }
 }, {
   tableName: 'users',  // Explicit table name
   timestamps: true,

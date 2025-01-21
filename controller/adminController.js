@@ -1,5 +1,4 @@
 import { User } from "../models/userModel.js";
-import { middleware } from "koa-pagination";
 
 // TO GET ALL THE USERS INFO FROM THE DB
 const getUsersInfo = async (ctx) => {
