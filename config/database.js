@@ -7,7 +7,7 @@ dotenv.config();
 // Correcting the typo in 'JWT_SECRET'
 const JWT_SECRECT = process.env.JWT_SECRECT;
 
-console.log('DB Name:', process.env.DB_name); // Check if DB name is correctly loaded
+console.log('JWt:', process.env.JWT_SECRECT); // Check if DB name is correctly loaded
 
 // Establish a connection to the database
 const sequelize = new Sequelize(

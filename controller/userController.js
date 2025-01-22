@@ -1,10 +1,9 @@
-import {User} from '../models/userModel.js';
-import { hashedPassword, checkPassword } from '../lib/hashpassword.js';
-import {sendMail} from '../lib/otpmail.js'
+import { User } from '../models/userModel.js';
+import { hashedPassword, checkPassword } from '../lib/hashPassword.js';
+import { sendMail } from '../lib/otpMail.js'
 import { otp } from '../lib/otp.js';
 import { tokenVerify } from '../lib/jwtVerification.js';
-import multer from 'koa-multer';
-import path from 'path';
+
 // Update the password 
 const updatePassword = async (ctx) => {
   try {
@@ -37,9 +36,10 @@ const updatePassword = async (ctx) => {
 const updateEmail = async (ctx) => {
   try {
     const { newemail } = ctx.request.body;
-    const token = ctx.headers.authorization?.split(' ')[1];;
-    const decoded = jwt.verify(token, JWT_SECRECT);
-    const username = decoded.username;
+    const decoded = await tokenVerify(ctx);
+    console.log(decoded);
+    const username = decoded;
+    console.log(username);
     const user = await User.findOne({ where: { username } });
     if (!user) {
       ctx.status = 404;
@@ -67,9 +67,10 @@ const updateEmail = async (ctx) => {
 const updateUsername = async (ctx) => {
   try {
     const {  newusername } = ctx.request.body;
-    const token = ctx.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRECT);
-    const username = decoded.username;
+    const decoded = await tokenVerify(ctx);
+    console.log(decoded);
+    const username = decoded;
+    console.log(username);;
     const user = await User.findOne({ where: { username } });
     if (!user) {
       ctx.status = 404;
@@ -96,12 +97,12 @@ const updateUsername = async (ctx) => {
 // Delete user
 const deleteUser = async (ctx) => {
   try {
-    const token = ctx.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRECT);
+    const decoded = await tokenVerify(ctx);
     console.log(decoded);
-    const username = decoded.username;
+    const username = decoded;
     console.log(username);
     const user = await User.findOne({ where: { username } });
+    console.log(user);
     if (!user) {
       ctx.status = 404;
       ctx.body = { message: `User ${username} does not exist` };
@@ -198,19 +199,7 @@ const resetPassword = async (ctx) => {
   };
 };
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/'); 
-  },
-  filename: function (req, file, cb) {
-    //save the original file extension
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}${ext}`);
-  },
-});
-
-const upload = multer({ storage });
-
+//TO UPLOAD PICTURE
 const uploadPicture = async (ctx) => {
   try {
     const file = ctx.req.file;
@@ -222,8 +211,6 @@ const uploadPicture = async (ctx) => {
       };
       return;
     }
-    console.log(file);
-
     ctx.status = 202;
     ctx.body = {
       message: 'File uploaded successfully',
@@ -243,8 +230,6 @@ const uploadPicture = async (ctx) => {
   }
 };
 
-
-
 export {
   updatePassword,
   updateEmail,
@@ -253,5 +238,4 @@ export {
   resetPassword, 
   OTPresetPassword,
   uploadPicture,
-  upload
 };

@@ -1,7 +1,8 @@
 import { User } from '../models/userModel.js';
 import * as yup from 'yup';
 import { generateToken } from '../lib/jwtVerification.js';
-import { checkPassword, hashedPassword } from '../lib/hashpassword.js';
+import { checkPassword, hashedPassword } from '../lib/hashPassword.js';
+import { UserProfiles } from '../models/userProfiles.js';
 
 // Define validation schema
 const schema = yup.object().shape({
@@ -29,9 +30,16 @@ const checkUser = async (username) => await User.findOne({ where: { username } }
 // Check if the email already exists
 const checkEmail = async (email) => await User.findOne({ where: { email } });
 
+// Check if the email already exists
+const checkCTZNS = async (citizenship) => {
+  const ctz =  await UserProfiles.findOne({ where: { citizenship } })
+  return ctz;
+};
+
+
 // Register user
 const registerUser = async (ctx) => {
-  const { username, password, email } = ctx.request.body;
+  const { username, password, email,Users_name, permanentAddress, secondaryAddress, citizenship } = ctx.request.body;
 
   // Validate request body
   const validation = await validInfo({ username, password, email });
@@ -48,11 +56,20 @@ const registerUser = async (ctx) => {
       ctx.body = { message: "Username or Email already exists" };
       return;
     }
-
+    const checksss =  await checkCTZNS(citizenship);
+    console.log(checksss)
+    if(await checkCTZNS(citizenship)){
+      ctx.status = 400;
+      ctx.body = { message: "Citizenship is already used by another username" };
+      return;
+    }
     // Hash password and create the user
     const Password = await hashedPassword(password);
-    await User.create({ username, password: Password, email });
-
+    const user = await User.create({ username, password: Password, email, Users_name ,
+    UserProfiles:{
+      permanentAddress, secondaryAddress, citizenship
+    },},
+    { include: [UserProfiles] });
     ctx.status = 201;
     ctx.body = { message: "User created successfully" };
   } catch (error) {
@@ -73,11 +90,11 @@ const login = async (ctx) => {
     ctx.body = { errors: validation.errors };
     return;
   }
-
   try {
     const user = await checkUser(username);
-    if (user && await checkPassword(password, user)) {
+    if (user && await checkPassword(password, user.password)) {
       const payload = { username: user.username, email: user.email };
+      console.log(payload)
       const token = await generateToken(payload);
       console.log(token)
 
