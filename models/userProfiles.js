@@ -1,5 +1,6 @@
 import { sequelize } from "../config/database.js";
 import { DataTypes } from "sequelize";
+import { userRelation } from './relationships.js';
 
 const UserProfiles = sequelize.define('userProfiles',{
   id: {
@@ -29,6 +30,7 @@ const UserProfiles = sequelize.define('userProfiles',{
   timestamps: true,
 });
 
+userRelation();
 sequelize.sync({ force: false })  //force: false ensures it doesn't overwrite existing tables
   .then(() => console.log('userProfile table synced successfully'))
   .catch((err) => console.error('Error syncing user table:', err));

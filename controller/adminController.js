@@ -1,11 +1,21 @@
 import { User } from "../models/userModel.js";
+import { UserProfiles } from "../models/userProfiles.js";
 
 // TO GET ALL THE USERS INFO FROM THE DB
 const getUsersInfo = async (ctx) => {
   try {
     const limit = ctx.query.limit ? parseInt(ctx.query.limit) : 10; 
     const offset = ctx.query.offset ? parseInt(ctx.query.offset) : 0;  
-    const users = await User.findAll({ limit, offset });
+    const users = await User.findAll({
+      limit,
+      offset,
+      include: [
+        {
+          model: UserProfiles,
+          as: "userProfile",
+        },
+      ],
+    });
     ctx.pagination.length = User.count();
     let count = await ctx.pagination.length ;
     console.log(count)

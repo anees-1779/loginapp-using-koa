@@ -65,11 +65,14 @@ const registerUser = async (ctx) => {
     }
     // Hash password and create the user
     const Password = await hashedPassword(password);
-    const user = await User.create({ username, password: Password, email, Users_name ,
-    UserProfiles:{
-      permanentAddress, secondaryAddress, citizenship
-    },},
-    { include: [UserProfiles] });
+    const user = await User.create({ username, password: Password, email, Users_name});
+    await UserProfiles.create({
+      permanentAddress,
+      secondaryAddress,
+      citizenship,
+      userID: user.id, // Correct placement
+    });
+    
     ctx.status = 201;
     ctx.body = { message: "User created successfully" };
   } catch (error) {

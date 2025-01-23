@@ -3,12 +3,12 @@ import { hashedPassword, checkPassword } from '../lib/hashPassword.js';
 import { sendMail } from '../lib/otpMail.js'
 import { otp } from '../lib/otp.js';
 import { tokenVerify } from '../lib/jwtVerification.js';
+import { UserProfiles } from '../models/userProfiles.js';
 
 // Update the password 
 const updatePassword = async (ctx) => {
   try {
     const username = await tokenVerify(ctx);
-    console.log(username);
     const {newpassword,password} = ctx.request.body;
     const user = await User.findOne({ where: { username } });
     if (!user) {
@@ -16,13 +16,13 @@ const updatePassword = async (ctx) => {
       ctx.body = { message: "User does not exist" };
       return;
     }
-    const isPasswordValid =await checkPassword(password, user.password);
+    const isPasswordValid = checkPassword(password, user.password);
     if (!isPasswordValid) {
       ctx.status = 400;
       ctx.body = { message: "Old password is incorrect" };
       return;
     }
-    const Password =await hashedPassword(newpassword);
+    const Password = hashedPassword(newpassword);
     await User.update({ password: Password }, { where: { username } });
     ctx.status = 200;
     ctx.body = { message: "Password updated successfully" };
@@ -203,7 +203,9 @@ const resetPassword = async (ctx) => {
 const uploadPicture = async (ctx) => {
   try {
     const file = ctx.req.file;
-
+    const decoded = await tokenVerify(ctx);
+    console.log(decoded);
+    const username = decoded;
     if (!file) {
       ctx.status = 404;
       ctx.body = {
@@ -211,6 +213,8 @@ const uploadPicture = async (ctx) => {
       };
       return;
     }
+   const user = await User.findOne({where:{ username }});
+   await UserProfiles.update({ picture: file.path}, {where: { userID: user.id } })
     ctx.status = 202;
     ctx.body = {
       message: 'File uploaded successfully',

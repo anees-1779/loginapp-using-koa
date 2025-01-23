@@ -1,11 +1,16 @@
 import { User } from "./userModel.js";
 import { UserProfiles } from "./userProfiles.js";
 
-User.hasOne(UserProfiles, {
+const userRelation = async () => {User.hasOne(UserProfiles, {
   foreignKey: "userID",
+  as: "userProfile",
   onDelete: "CASCADE"
-})
+});
 
 UserProfiles.belongsTo(User, {
-  foreignKey: "userID"
-})
+  foreignKey: "userID",
+  as: "user"
+});
+};
+
+export { userRelation };

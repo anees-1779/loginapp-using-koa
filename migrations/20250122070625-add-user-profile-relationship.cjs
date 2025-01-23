@@ -1,9 +1,12 @@
+const { FOREIGNKEYS } = require("sequelize/lib/query-types");
+
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     // Add a column called userId to UserProfiles
     await queryInterface.addColumn('userProfiles', 'userId', {
       type: Sequelize.INTEGER, // Type of data (integer)
       allowNull: false, // Make sure userId cannot be null
+      foreignKey:true,
       references: {
         model: 'Users', // Link this to the Users table
         key: 'id', // The 'id' column in the Users table
