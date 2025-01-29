@@ -16,13 +16,16 @@ const updatePassword = async (ctx) => {
       ctx.body = { message: "User does not exist" };
       return;
     }
-    const isPasswordValid = checkPassword(password, user.password);
-    if (!isPasswordValid) {
-      ctx.status = 400;
+    console.log(user.password)
+    const isPasswordValid = await checkPassword(password, user.password);
+    console.log(isPasswordValid)
+    if (!isPasswordValid){
+      ctx.status = 401;
       ctx.body = { message: "Old password is incorrect" };
       return;
     }
-    const Password = hashedPassword(newpassword);
+    const Password = await hashedPassword(newpassword);
+    console.log(Password)
     await User.update({ password: Password }, { where: { username } });
     ctx.status = 200;
     ctx.body = { message: "Password updated successfully" };
@@ -49,7 +52,7 @@ const updateEmail = async (ctx) => {
 
     const existingEmail = await User.findOne({ where: { email: newemail } });
     if (existingEmail) {
-      ctx.status = 400;
+      ctx.status = 406;
       ctx.body = { message: "Email already exists" };
       return;
     }
@@ -80,7 +83,7 @@ const updateUsername = async (ctx) => {
 
     const existingUsername = await User.findOne({ where: { username: newusername } });
     if (existingUsername) {
-      ctx.status = 400;
+      ctx.status = 406;
       ctx.body = { message: "Username already exists" };
       return;
     }
@@ -174,11 +177,9 @@ const resetPassword = async (ctx) => {
       }
       return;
     }
-    console.log(user.otp);
     if(otp == user.otp && user.otp != null){
-      const hashedPassword = await hashPassword(newpassword);
-      console.log(hashedPassword);
-      await User.update({password: hashedPassword}, {where: { username: username}});
+      const hashPassword = await hashedPassword(newpassword);
+      await User.update({password: hashPassword}, {where: { username: username}});
       await User.update({otp: null}, {where: {username: username}})
       ctx.status = 200;
       ctx.body = {
