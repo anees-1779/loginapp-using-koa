@@ -36,7 +36,6 @@ const checkCTZNS = async (citizenship) => {
   return ctz;
 };
 
-
 // Register user
 const registerUser = async (ctx) => {
   const { username, password, email,Users_name, permanentAddress, secondaryAddress, citizenship } = ctx.request.body;

@@ -1,11 +1,13 @@
 import { User } from "../models/userModel.js";
 import { UserProfiles } from "../models/userProfiles.js";
+import { Sequelize } from "sequelize";
 
 // TO GET ALL THE USERS INFO FROM THE DB
 const getUsersInfo = async (ctx) => {
   try {
-    const limit = ctx.query.limit ? parseInt(ctx.query.limit) : 10; 
-    const offset = ctx.query.offset ? parseInt(ctx.query.offset) : 0;  
+    const limit = ctx.query.limit ? parseInt(ctx.query.limit) : 2; 
+    let offset = ctx.query.offset ? parseInt(ctx.query.offset) : 0; 
+    console.log(limit, offset);
     const users = await User.findAll({
       limit,
       offset,
@@ -15,15 +17,13 @@ const getUsersInfo = async (ctx) => {
           as: "userProfile",
         },
       ],
+      order: [['id', 'ASC']]
     });
-    ctx.pagination.length = User.count();
-    let count = await ctx.pagination.length ;
-    console.log(count)
-
-    ctx.body = {
+    const totalUsers = await User.count();
+   ctx.body = {
       message: "Users fetched successfully",
       users,
-      "total": count
+      total: totalUsers
     };
   } catch (error) {
     ctx.status = 400;
@@ -33,7 +33,6 @@ const getUsersInfo = async (ctx) => {
     };
   }
 };
-
 
 //TO DELETE A USER
 const deleteUser = async (ctx) =>{
@@ -64,6 +63,13 @@ const updateUser = async (ctx) =>{
   const user = await User.findOne({where :{ id: id }});
   const CNU = await checkNewUsername(newUsername, user);
   const CNE = await checkNewEmail(newEmail, user);
+  if(!newUsername && !newEmail){
+    ctx.status = 404;
+    ctx.body = {
+      message: "Enter what you want to change"
+    }
+    return; 
+  }
   if (CNU == true){
     ctx.status = 404;
     ctx.body = {
@@ -91,8 +97,53 @@ const updateUser = async (ctx) =>{
   }
 }};
 
+//TO SEARCH USER
+const searchUser = async (ctx) =>{
+  const query = ctx.query.user;
+  const limit = ctx.query.limit || 2;
+  const offset = ctx.query.offset || 0;
+  console.log(query);
+  if(!query){
+    ctx.status = 400;
+    ctx.body = {
+      message:'Please enter any info of the user you want to search in the query'
+    }
+    return;
+  }
+  try{
+    const user = await User.findAll({
+      where: {
+        [Sequelize.Op.or]: [
+          { username: { [Sequelize.Op.iLike]: `%${query}%` } },
+          { email: { [Sequelize.Op.iLike]: `%${query}%` } },
+          { Users_name: { [Sequelize.Op.iLike]: `%${query}%` } }
+        ]
+      },
+      limit,
+      offset,
+      include: [
+        {
+          model: UserProfiles,
+          as: "userProfile",
+        }
+      ],
+       order: [['id', 'ASC']]
+    });
+    
+ ctx.status = 200;
+ ctx.body = {
+  message: `Users retrieved successfully of following info ${query}`,
+  user: user,
+ }
+  }
+  catch(err){
+    ctx.status = 400;
+    ctx.body = err
+  }
+}
+
 //TO CHECK IF THE EMAIL OR USERNAME EXIST OR NOT
- async function checkNewUsername(newUsername,user){
+const checkNewUsername = async (newUsername, user) => {
   if(newUsername === undefined){
     return newUsername = user.username;
   }
@@ -103,7 +154,7 @@ const updateUser = async (ctx) =>{
   return false;
 }
 
-async function checkNewEmail(newEmail, user){
+const checkNewEmail = async (newEmail, user)=>{
   if(newEmail === undefined){
     return newEmail = user.email;
   }
@@ -114,5 +165,5 @@ async function checkNewEmail(newEmail, user){
   return false;
 }
 
-export { getUsersInfo, deleteUser, updateUser };
+export { getUsersInfo, deleteUser, updateUser, searchUser };
 

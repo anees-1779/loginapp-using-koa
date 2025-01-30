@@ -1,7 +1,7 @@
 import { User } from "./userModel.js";
 import { UserProfiles } from "./userProfiles.js";
 
-const userRelation = async () => {User.hasOne(UserProfiles, {
+const userRelation = () => {User.hasOne(UserProfiles, {
   foreignKey: "userID",
   as: "userProfile",
   onDelete: "CASCADE"
